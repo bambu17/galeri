@@ -18,4 +18,5 @@
         <button class="button button-primary auth-submit" type="submit">Masuk ke galeri <span aria-hidden="true">→</span></button>
     </form>
     <p class="auth-switch">Belum punya akun? <a href="{{ route('register') }}">Buat akun</a></p>
+    <p class="auth-switch">Administrator? <a href="{{ route('admin.login') }}">Masuk ke panel admin</a></p>
 @endsection

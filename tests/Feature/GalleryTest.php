@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -26,7 +27,72 @@ class GalleryTest extends TestCase
             'password_confirmation' => 'rahasia123',
         ])->assertRedirect('/photos');
 
-        $this->assertAuthenticatedAs(User::where('email', 'rani@example.com')->firstOrFail());
+        $user = User::where('email', 'rani@example.com')->firstOrFail();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertTrue(Hash::check('rahasia123', $user->password));
+    }
+
+    public function test_a_user_can_sign_in_and_sign_out(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'rani@example.com',
+            'password' => 'rahasia123',
+        ]);
+
+        $this->post('/login', [
+            'email' => 'rani@example.com',
+            'password' => 'rahasia123',
+        ])->assertRedirect('/photos');
+
+        $this->assertAuthenticatedAs($user);
+
+        $this->post('/logout')->assertRedirect('/login');
+
+        $this->assertGuest();
+    }
+
+    public function test_a_user_cannot_sign_in_with_an_incorrect_password(): void
+    {
+        User::factory()->create([
+            'email' => 'rani@example.com',
+            'password' => 'rahasia123',
+        ]);
+
+        $this->from('/login')
+            ->post('/login', [
+                'email' => 'rani@example.com',
+                'password' => 'kata-sandi-salah',
+            ])
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+    }
+
+    public function test_a_user_cannot_register_with_an_existing_email_or_unconfirmed_password(): void
+    {
+        User::factory()->create(['email' => 'rani@example.com']);
+
+        $this->from('/register')
+            ->post('/register', [
+                'name' => 'Rani Putri',
+                'email' => 'rani@example.com',
+                'password' => 'rahasia123',
+                'password_confirmation' => 'rahasia123',
+            ])
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('email');
+
+        $this->from('/register')
+            ->post('/register', [
+                'name' => 'Sari Putri',
+                'email' => 'sari@example.com',
+                'password' => 'rahasia123',
+                'password_confirmation' => 'tidak-sama',
+            ])
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors('password');
     }
 
     public function test_authenticated_users_can_open_the_gallery_and_photo_forms(): void

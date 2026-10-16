@@ -15,6 +15,7 @@ class GalleryController extends Controller
         $search = $request->string('search')->trim()->toString();
 
         $photos = $request->user()->photos()
+            ->where('is_blocked', false)
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('title', 'like', "%{$search}%")
@@ -28,7 +29,7 @@ class GalleryController extends Controller
         return view('photos.index', [
             'photos' => $photos,
             'search' => $search,
-            'photoCount' => $request->user()->photos()->count(),
+            'photoCount' => $request->user()->photos()->where('is_blocked', false)->count(),
         ]);
     }
 
@@ -102,6 +103,6 @@ class GalleryController extends Controller
 
     private function ownedPhoto(int $photo): Photo
     {
-        return auth()->user()->photos()->findOrFail($photo);
+        return auth()->user()->photos()->where('is_blocked', false)->findOrFail($photo);
     }
 }
